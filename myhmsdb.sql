@@ -60,7 +60,8 @@ CREATE TABLE `appointmenttb` (
   `appdate` date  NULL,
   `apptime` time  NULL,
   `userStatus` int(5)  NULL,
-  `doctorStatus` int(5)  NULL
+  `doctorStatus` int(5)  NULL,
+  `appointment_status` int(5) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -262,3 +263,22 @@ INSERT INTO marital_status (name) VALUES
 ('Civil Union'),
 ('Domestic Partnership'),
 ('Prefer not to say');
+
+
+CREATE TABLE expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    DATE DATE NOT NULL,
+    eb_bill DECIMAL(10,2)  NULL,
+    physio_expenses DECIMAL(10,2)  NULL,
+    salary DECIMAL(10,2)  NULL,
+    tv DECIMAL(10,2)  NULL,
+    tea DECIMAL(10,2)  NULL,
+    phone_bill DECIMAL(10,2)  NULL,
+    food DECIMAL(10,2)  NULL,
+    biscuit DECIMAL(10,2)  NULL,
+    cool_drinks DECIMAL(10,2)  NULL,
+    service DECIMAL(10,2)  NULL,
+    WORK DECIMAL(10,2)  NULL,
+    milk DECIMAL(10,2)  NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

@@ -5,29 +5,60 @@ $con = mysqli_connect("localhost", "root", "", "myhmsdb");
 $doctor = $_SESSION['dname'];
 if (isset($_GET['cancel'])) {
   $query = mysqli_query($con, "update appointmenttb set doctorStatus='0' where ID = '" . $_GET['ID'] . "'");
-  if ($query) {
-    echo "<script>alert('Your appointment successfully cancelled');</script>";
-  }
 }
 
-// if(isset($_GET['prescribe'])){
+if (isset($_GET['ID'])) {
+  $appointmentID = $_GET['ID'];
+  $query = "UPDATE appointmenttb SET appointment_status = 2 WHERE ID = ?";
+  $stmt = $con->prepare($query);
+  $stmt->bind_param("i", $appointmentID);
 
-//   $pid = $_GET['pid'];
-//   $ID = $_GET['ID'];
-//   $appdate = $_GET['appdate'];
-//   $apptime = $_GET['apptime'];
-//   $disease = $_GET['disease'];
-//   $allergy = $_GET['allergy'];
-//   $prescription = $_GET['prescription'];
-//   $query=mysqli_query($con,"insert into prestb(doctor,pid,ID,appdate,apptime,disease,allergy,prescription) values ('$doctor',$pid,$ID,'$appdate','$apptime','$disease','$allergy','$prescription');");
-//   if($query)
-//   {
-//     echo "<script>alert('Prescribed successfully!');</script>";
-//   }
-//   else{
-//     echo "<script>alert('Unable to process your request. Try again!');</script>";
-//   }
-// }
+  if ($stmt->execute()) {
+    echo "<script>
+          alert('Appointment Rejected Successfully');
+          window.location.href = 'doctor-panel.php';
+      </script>";
+  } else {
+    echo "<script>alert('Failed to Reject Appointment');</script>";
+  }
+
+  $stmt->close();
+}
+if (isset($_GET['approvalId'])) {
+  $appointmentID = $_GET['approvalId'];
+  $query = "UPDATE appointmenttb SET appointment_status = 1 WHERE ID = ?";
+  $stmt = $con->prepare($query);
+  $stmt->bind_param("i", $appointmentID);
+
+  if ($stmt->execute()) {
+    echo "<script>
+          alert('Appointment  Approve  Successfully');
+          window.location.href = 'doctor-panel.php';
+      </script>";
+  } else {
+    echo "<script>alert('Failed to Reject Appointment');</script>";
+  }
+
+  $stmt->close();
+}
+if (isset($_GET['patientDeleteId'])) {
+  $patientID = $_GET['patientDeleteId']; 
+  $query = "DELETE FROM patreg WHERE pid = ?"; 
+
+  $stmt = $con->prepare($query);
+  $stmt->bind_param("i", $patientID);
+
+  if ($stmt->execute()) {
+    echo "<script>
+          alert('Patient record deleted successfully.');
+          window.location.href = 'doctor-panel.php';
+      </script>";
+  } else {
+    echo "<script>alert('Failed to delete patient record.');</script>";
+  }
+
+  $stmt->close();
+}
 
 
 ?>
@@ -156,15 +187,21 @@ if (isset($_GET['cancel'])) {
       <div class="col-md-4" style="max-width:18%;margin-top: 3%;">
         <div class="list-group" id="list-tab" role="tablist">
           <a class="list-group-item list-group-item-action active" href="#list-dash" role="tab" aria-controls="home" data-toggle="list">Dashboard</a>
-          <a class="list-group-item list-group-item-action" href="#list-app" id="list-app-list" role="tab" data-toggle="list" aria-controls="home">Appointments</a>
+          <a class="list-group-item list-group-item-action " href="#list-app" id="list-app-list" role="tab" data-toggle="list" aria-controls="home">Appointment List</a>
+          <a class="list-group-item list-group-item-action " href="#list-rejected" id="list-rejected-list" role="tab" data-toggle="list" aria-controls="home"> Rejected Appointment </a>
+          <a class="list-group-item list-group-item-action " href="#list-approval" id="list-approval-list" role="tab" data-toggle="list" aria-controls="home"> Approval Appointment </a>
+
           <a class="list-group-item list-group-item-action" href="#list-pres" id="list-pres-list" role="tab" data-toggle="list" aria-controls="home"> Prescription List</a>
           <a class="list-group-item list-group-item-action" href="#list-patient" id="list-patient-list" role="tab" data-toggle="list" aria-controls="home"> Patient List</a>
           <a class="list-group-item list-group-item-action" href="#list-add-patient" id="list-add-patient-list" role="tab" data-toggle="list" aria-controls="home">Add Patient </a>
-
+          <a class="list-group-item list-group-item-action" href="#list-add-expenses" id="list-add-expenses-list" role="tab" data-toggle="list" aria-controls="home"> Add Expenses</a>
+          <a class="list-group-item list-group-item-action" href="#list-expenses" id="list-expenses-list" role="tab" data-toggle="list" aria-controls="home">Expenses List</a>
         </div><br>
       </div>
       <div class="col-md-8" style="margin-top: 3%;">
         <div class="tab-content" id="nav-tabContent" style="width: 950px;">
+
+          <!-- Dashboard -->
           <div class="tab-pane fade show active" id="list-dash" role="tabpanel" aria-labelledby="list-dash-list">
 
             <div class="container-fluid container-fullw bg-white">
@@ -224,105 +261,177 @@ if (isset($_GET['cancel'])) {
           <div class="tab-pane fade" id="list-app" role="tabpanel" aria-labelledby="list-home-list">
             <div class="d-flex justify-content-between mb-3">
               <input type="text" id="searchInput" class="form-control" style="width: 100%;" placeholder="Search by Appointments...">
+            </div>
+
+            <!-- Added fixed height and vertical scroll -->
+            <div>
+              <table class="table table-hover w-100">
+                <thead class="thead-dark">
+                  <tr>
+                    <th scope="col">Patient ID</th>
+                    <th scope="col">Appointment ID</th>
+                    <th scope="col">First Name</th>
+                    <th scope="col">Gender</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Contact</th>
+                    <th scope="col">Appointment Date</th>
+                    <th scope="col">Appointment Time</th>
+                    <th scope="col">Approval</th>
+                    <th scope="col">Rejected</th>
+                  </tr>
+                </thead>
+                <tbody id="patientTable">
+                  <?php
+                  $con = mysqli_connect("localhost", "root", "", "myhmsdb");
+                  global $con;
+                  $dname = $_SESSION['dname'];
+                  $query = "SELECT pid, ID, fname, lname, gender, email, contact, appdate, apptime, userStatus, doctorStatus 
+                FROM appointmenttb 
+                WHERE doctor='$dname' AND appointment_status=0;";
+                  $result = mysqli_query($con, $query);
+                  while ($row = mysqli_fetch_array($result)) {
+                  ?>
+                    <tr>
+                      <td><?php echo $row['pid']; ?></td>
+                      <td><?php echo $row['ID']; ?></td>
+                      <td class="patient-name"><?php echo $row['fname'] . ' ' . $row['lname']; ?></td>
+                      <td><?php echo $row['gender']; ?></td>
+                      <td><?php echo $row['email']; ?></td>
+                      <td><?php echo $row['contact']; ?></td>
+                      <td><?php echo $row['appdate']; ?></td>
+                      <td><?php echo $row['apptime']; ?></td>
+
+                      </td>
+                      <td>
+                        <a href="doctor-panel.php?approvalId=<?php echo $row['ID']; ?>"
+                          onClick="return confirm('Are you sure you want to approve this appointment?')"
+                          title="Approve Appointment">
+                          <button class="btn btn-success">Approval</button>
+                        </a>
+                      </td>
+                      <td>
+                        <a href="doctor-panel.php?ID=<?php echo $row['ID']; ?>"
+                          onClick="return confirm('Are you sure you want to reject this appointment?')"
+                          title="Reject Appointment">
+                          <button class="btn btn-danger">Rejected</button>
+                        </a>
+                      </td>
+
+                    </tr>
+                  <?php } ?>
+                </tbody>
+              </table>
+            </div> <!-- Closing div for table-responsive -->
+          </div>
+          <!-- Rejected Appoinment div -->
+          <div class="tab-pane fade" id="list-rejected" role="tabpanel" aria-labelledby="list-rejected-list">
+            <div class="container-fluid px-0"> <!-- Full-width container -->
+
+              <table class="table table-hover w-100"> <!-- w-100 makes table full width -->
+                <thead class="thead-dark">
+                  <tr>
+                    <th scope="col">Patient ID</th>
+                    <th scope="col">First Name</th>
+                    <th scope="col">Last Name</th>
+                    <th scope="col">Appointment ID</th>
+                    <th scope="col">Appointment Date</th>
+                    <th scope="col">Appointment Time</th>
+                    <th scope="col">Appointment Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php
+                  $con = mysqli_connect("localhost", "root", "", "myhmsdb");
+                  global $con;
+
+                  $query = "SELECT pid, fname, lname, ID, appdate, apptime, appointment_status 
+                              FROM appointmenttb 
+                              WHERE doctor='$doctor' AND appointment_status = 2;";
+
+                  $result = mysqli_query($con, $query);
+                  if (!$result) {
+                    echo mysqli_error($con);
+                  }
+
+                  while ($row = mysqli_fetch_array($result)) {
+                  ?>
+                    <tr>
+                      <td><?php echo $row['pid']; ?></td>
+                      <td><?php echo $row['fname']; ?></td>
+                      <td><?php echo $row['lname']; ?></td>
+                      <td><?php echo $row['ID']; ?></td>
+                      <td><?php echo $row['appdate']; ?></td>
+                      <td><?php echo $row['apptime']; ?></td>
+                      <td><?php echo ($row['appointment_status'] == 2) ? "REJECTED" : ""; ?></td>
+                    </tr>
+                  <?php } ?>
+                </tbody>
+              </table>
 
             </div>
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">Patient ID</th>
-                  <th scope="col">Appointment ID</th>
-                  <th scope="col">First Name</th>
-                  <th scope="col">Gender</th>
-                  <th scope="col">Email</th>
-                  <th scope="col">Contact</th>
-                  <th scope="col">Appointment Date</th>
-                  <th scope="col">Appointment Time</th>
-                  <th scope="col">Current Status</th>
-                  <th scope="col">Action</th>
-                  <th scope="col">Prescribe</th>
-
-                </tr>
-              </thead>
-              <tbody id="patientTable">
-                <?php
-                $con = mysqli_connect("localhost", "root", "", "myhmsdb");
-                global $con;
-                $dname = $_SESSION['dname'];
-                $query = "select pid,ID,fname,lname,gender,email,contact,appdate,apptime,userStatus,doctorStatus from appointmenttb where doctor='$dname';";
-                $result = mysqli_query($con, $query);
-                while ($row = mysqli_fetch_array($result)) {
-                ?>
-                  <tr>
-                    <td><?php echo $row['pid']; ?></td>
-                    <td><?php echo $row['ID']; ?></td>
-                    <td class="patient-name"><?php echo $row['fname'] . $row['lname']; ?></td>
-
-                    <td><?php echo $row['gender']; ?></td>
-                    <td><?php echo $row['email']; ?></td>
-                    <td><?php echo $row['contact']; ?></td>
-                    <td><?php echo $row['appdate']; ?></td>
-                    <td><?php echo $row['apptime']; ?></td>
-                    <td>
-                      <?php if (($row['userStatus'] == 1) && ($row['doctorStatus'] == 1)) {
-                        echo "Active";
-                      }
-                      if (($row['userStatus'] == 0) && ($row['doctorStatus'] == 1)) {
-                        echo "Cancelled by Patient";
-                      }
-
-                      if (($row['userStatus'] == 1) && ($row['doctorStatus'] == 0)) {
-                        echo "Cancelled by You";
-                      }
-                      ?></td>
-
-                    <td>
-                      <?php if (($row['userStatus'] == 1) && ($row['doctorStatus'] == 1)) { ?>
-
-
-                        <a href="doctor-panel.php?ID=<?php echo $row['ID'] ?>&cancel=update"
-                          onClick="return confirm('Are you sure you want to cancel this appointment ?')"
-                          title="Cancel Appointment" tooltip-placement="top" tooltip="Remove"><button class="btn btn-danger">Cancel</button></a>
-                      <?php } else {
-
-                        echo "Cancelled";
-                      } ?>
-
-                    </td>
-
-                    <td>
-
-                      <?php if (($row['userStatus'] == 1) && ($row['doctorStatus'] == 1)) { ?>
-
-                        <a href="prescribe.php?pid=<?php echo $row['pid'] ?>&ID=<?php echo $row['ID'] ?>&fname=<?php echo $row['fname'] ?>&lname=<?php echo $row['lname'] ?>&appdate=<?php echo $row['appdate'] ?>&apptime=<?php echo $row['apptime'] ?>"
-                          tooltip-placement="top" tooltip="Remove" title="prescribe">
-                          <button class="btn btn-success">Prescibe</button></a>
-                      <?php } else {
-
-                        echo "-";
-                      } ?>
-
-                    </td>
-
-
-                  </tr></a>
-                <?php } ?>
-              </tbody>
-            </table>
-            <br>
           </div>
-          <!-- Patient div -->
+          <!-- Approval  Appoinment div -->
+          <div class="tab-pane fade" id="list-approval" role="tabpanel" aria-labelledby="list-approval-list">
+            <div class="container-fluid px-0">
+
+              <table class="table table-hover w-100">
+                <thead class="thead-dark">
+                  <tr>
+                    <th scope="col">Patient ID</th>
+                    <th scope="col">First Name</th>
+                    <th scope="col">Last Name</th>
+                    <th scope="col">Appointment ID</th>
+                    <th scope="col">Appointment Date</th>
+                    <th scope="col">Appointment Time</th>
+                    <th scope="col">Appointment Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php
+                  $con = mysqli_connect("localhost", "root", "", "myhmsdb");
+                  global $con;
+
+                  $query = "SELECT pid, fname, lname, ID, appdate, apptime, appointment_status 
+                              FROM appointmenttb 
+                              WHERE doctor='$doctor' AND appointment_status = 1;";
+
+                  $result = mysqli_query($con, $query);
+                  if (!$result) {
+                    echo mysqli_error($con);
+                  }
+
+                  while ($row = mysqli_fetch_array($result)) {
+                  ?>
+                    <tr>
+                      <td><?php echo $row['pid']; ?></td>
+                      <td><?php echo $row['fname']; ?></td>
+                      <td><?php echo $row['lname']; ?></td>
+                      <td><?php echo $row['ID']; ?></td>
+                      <td><?php echo $row['appdate']; ?></td>
+                      <td><?php echo $row['apptime']; ?></td>
+                      <td><?php echo ($row['appointment_status'] == 1) ? "APPROVAL" : ""; ?></td>
+                    </tr>
+                  <?php } ?>
+                </tbody>
+              </table>
+
+            </div>
+          </div>
+
+
+          <!-- Patient List div -->
           <div class="tab-pane fade" id="list-patient" role="tabpanel" aria-labelledby="list-home-list">
 
             <!-- Search Input Field and Add Patient Button -->
             <div class="d-flex justify-content-between mb-3">
-              <input type="text" id="searchInput" class="form-control" style="width: 100%;" placeholder="Search by Patient Name...">
+              <input type="text" id="patientSearchInput" class="form-control" style="width: 100%;" placeholder="Search by Patient Name...">
 
             </div>
 
             <!-- Table Container -->
             <div class="table-container">
               <table class="table table-hover">
-                <thead>
+                <thead class="thead-dark">
                   <tr>
                     <th scope="col">PatientID</th>
                     <th scope="col"> Name</th>
@@ -332,9 +441,10 @@ if (isset($_GET['cancel'])) {
                     <th scope="col">Date of Birth</th>
                     <th scope="col">Address</th>
                     <th scope="col">Action</th>
+
                   </tr>
                 </thead>
-                <tbody id="patientTable">
+                <tbody id="patientDataSearch">
                   <?php
                   $con = mysqli_connect("localhost", "root", "", "myhmsdb");
                   global $con;
@@ -344,16 +454,24 @@ if (isset($_GET['cancel'])) {
                   ?>
                     <tr>
                       <td><?php echo $row['pid']; ?></td>
-                      <td class="patient-name"><?php echo $row['fname'] . " " . $row['lname']; ?></td>
+                      <td class="patient-firstName"><?php echo $row['fname'] . " " . $row['lname']; ?></td>
                       <td><?php echo $row['email']; ?></td>
                       <td><?php echo $row['contact']; ?></td>
                       <td><?php echo $row['gender']; ?></td>
                       <td><?php echo $row['dob']; ?></td>
                       <td><?php echo $row['address']; ?></td>
                       <td>
-                        <a href="doctor-panel.php?ID=<?php echo $row['pid'] ?>&cancel=update" title="Cancel Appointment">
-                          <button class="btn btn-primary">View</button>
+
+                        <button type="button" class="btn btn-primary view-btn" data-patient-id="1">View</button>
+                        <a href="doctor-panel.php?patientDeleteId=<?php echo $row['pid']; ?>"
+                          onClick="return confirm('Are you sure you want to Delete this Patient ?')"
+                          title="Reject Appointment"  class="btn btn-danger">Delete
+                         
                         </a>
+                      </td>
+
+                      <td>
+
                       </td>
                     </tr>
                   <?php } ?>
@@ -361,14 +479,10 @@ if (isset($_GET['cancel'])) {
               </table>
             </div>
           </div>
-
-
-
-
           <!-- Pres div -->
           <div class="tab-pane fade" id="list-pres" role="tabpanel" aria-labelledby="list-pres-list">
             <table class="table table-hover">
-              <thead>
+              <thead class="thead-dark">
                 <tr>
 
                   <th scope="col">Patient ID</th>
@@ -498,57 +612,135 @@ if (isset($_GET['cancel'])) {
 
 
           </div>
+          <!-- Add Expenses  div -->
+          <div class="tab-pane fade" id="list-add-expenses" role="tabpanel" aria-labelledby="list-add-expenses-list">
+            <div id="expensesMessage"></div>
+            <form id="ExpensesForm">
+              <div class="row register-form">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <input type="date" class="form-control" placeholder="Date *" name="date" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="EB Bill *" name="eb_bill" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Physio Expenses *" name="physio_expenses" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Salary *" name="salary" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="TV *" name="tv" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Tea *" name="tea" />
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Phone Bill *" name="phone_bill" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Food *" name="food" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Biscuit *" name="biscuit" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Cool Drinks *" name="cool_drinks" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Service *" name="service" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Work *" name="work" />
+                  </div>
+                  <div class="form-group">
+                    <input type="number" class="form-control" placeholder="Milk *" name="milk" />
+                  </div>
+                  <input hidden type="text" name="expenses" value="expenses" class="form-control" />
+
+                  <input type="submit" name="expenses" class="btnRegister btn btn-success" value="Submit" />
+                </div>
+              </div>
+
+            </form>
 
 
 
-
-
-          <div class="tab-pane fade" id="list-app" role="tabpanel" aria-labelledby="list-pat-list">
-
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">First Name</th>
-                  <th scope="col">Last Name</th>
-                  <th scope="col">Email</th>
-                  <th scope="col">Contact</th>
-                  <th scope="col">Doctor Name</th>
-                  <th scope="col">Consultancy Fees</th>
-                  <th scope="col">Appointment Date</th>
-                  <th scope="col">Appointment Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php
-
-                $con = mysqli_connect("localhost", "root", "", "myhmsdb");
-                global $con;
-
-                $query = "select * from appointmenttb;";
-                $result = mysqli_query($con, $query);
-                while ($row = mysqli_fetch_array($result)) {
-
-                  #$fname = $row['fname'];
-                  #$lname = $row['lname'];
-                  #$email = $row['email'];
-                  #$contact = $row['contact'];
-                ?>
-                  <tr>
-                    <td><?php echo $row['fname']; ?></td>
-                    <td><?php echo $row['lname']; ?></td>
-                    <td><?php echo $row['email']; ?></td>
-                    <td><?php echo $row['contact']; ?></td>
-                    <td><?php echo $row['doctor']; ?></td>
-                    <td><?php echo $row['docFees']; ?></td>
-                    <td><?php echo $row['appdate']; ?></td>
-                    <td><?php echo $row['apptime']; ?></td>
-                  </tr>
-                <?php } ?>
-              </tbody>
-            </table>
-            <br>
           </div>
+          <!-- Expenses  List div -->
+          <div class="tab-pane fade" id="list-expenses" role="tabpanel" aria-labelledby="list-expenses-list">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <label for="start-date">Start Date:</label>
+                <input type="date" id="start-date" class="form-control d-inline-block" style="width: 150px;">
+              </div>
+              <div>
+                <label for="end-date">End Date:</label>
+                <input type="date" id="end-date" class="form-control d-inline-block" style="width: 150px;">
+              </div>
+              <div>
+                <button id="search-btn" class="btn btn-primary">Search</button>
+                <button id="reset-btn" class="btn btn-secondary">Reset</button> <!-- New Reset Button -->
+              </div>
+            </div>
 
+            <!-- Table with Scroll -->
+            <div style="width: 80vw; max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;">
+              <table class="table table-hover" style="width: 100%; border-collapse: collapse;">
+                <thead class="thead-dark" style="position: sticky; top: 0; background: #343a40; color: white; z-index: 1000;">
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">EB Bill</th>
+                    <th scope="col">Physio Expenses</th>
+                    <th scope="col">Salary</th>
+                    <th scope="col">TV</th>
+                    <th scope="col">Tea</th>
+                    <th scope="col">Phone Bill</th>
+                    <th scope="col">Food</th>
+                    <th scope="col">Biscuit</th>
+                    <th scope="col">Cool Drinks</th>
+                    <th scope="col">Service</th>
+                    <th scope="col">Work</th>
+                    <th scope="col">Milk</th>
+                  </tr>
+                </thead>
+                <tbody id="expenses-table">
+                  <?php
+                  $con = mysqli_connect("localhost", "root", "", "myhmsdb");
+
+                  if (!$con) {
+                    die("Connection failed: " . mysqli_connect_error());
+                  }
+
+                  $query = "SELECT * FROM expenses ORDER BY date DESC";
+                  $result = mysqli_query($con, $query);
+
+                  while ($row = mysqli_fetch_assoc($result)) {
+                  ?>
+                    <tr>
+                      <td><?php echo $row['date']; ?></td>
+                      <td><?php echo $row['eb_bill']; ?></td>
+                      <td><?php echo $row['physio_expenses']; ?></td>
+                      <td><?php echo $row['salary']; ?></td>
+                      <td><?php echo $row['tv']; ?></td>
+                      <td><?php echo $row['tea']; ?></td>
+                      <td><?php echo $row['phone_bill']; ?></td>
+                      <td><?php echo $row['food']; ?></td>
+                      <td><?php echo $row['biscuit']; ?></td>
+                      <td><?php echo $row['cool_drinks']; ?></td>
+                      <td><?php echo $row['service']; ?></td>
+                      <td><?php echo $row['work']; ?></td>
+                      <td><?php echo $row['milk']; ?></td>
+                    </tr>
+                  <?php } ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
 
 
@@ -586,7 +778,7 @@ if (isset($_GET['cancel'])) {
   <!-- JavaScript for Search Functionality -->
   <script>
     $(document).ready(function() {
-
+      // <!-- Add Patient Ajax Form -->
       $("#patientForm").on("submit", function(e) {
         e.preventDefault();
         // let formData = $(this).serializeArray();
@@ -637,16 +829,93 @@ if (isset($_GET['cancel'])) {
       });
     });
 
+    // Action View Button Navigator
+    $(".view-btn").click(function() {
+      var patientId = $(this).data("patient-id");
+      console.log("Selected Patient ID: " + patientId);
+      $(".list-group-item").removeClass("active");
+      $("#patient-list-container").hide();
+      $("#list-dash").removeClass("show active");
+      $("#list-add-patient-list").addClass("active");
+      $("#list-add-patient").addClass("show active");
+    });
+    $("#list-patient-list").click(function() {
+      $("#patient-list-container").show();
+    });
 
 
-    document.getElementById("searchInput").addEventListener("keyup", function() {
-      let filter = this.value.toLowerCase();
-      let rows = document.querySelectorAll("#patientTable tr");
 
-      rows.forEach(row => {
-        let name = row.querySelector(".patient-name").textContent.toLowerCase();
-        row.style.display = name.includes(filter) ? "" : "none";
+
+
+
+    // <!-- Add Expenses Ajax Form -->
+    $("#ExpensesForm").on("submit", function(e) {
+      e.preventDefault();
+      // let formData = $(this).serializeArray();
+      // let dataString = "";
+      // formData.forEach(item => {
+      //   dataString += `${item.name}: ${item.value}\n`;
+      // });
+      // alert("Submitted Data:\n" + dataString);
+
+      $.ajax({
+        url: "expenses.php",
+        type: "POST",
+        data: $(this).serialize(),
+        success: function(response) {
+          var messageDiv = $("#expensesMessage");
+
+          // Parse the JSON response if needed
+          if (typeof response === "string") {
+            response = JSON.parse(response);
+          }
+
+          // alert(response.message); // Show the message in an alert
+
+          messageDiv.html(response.message).css({
+            "position": "fixed",
+            "left": "50%",
+            "transform": "translate(-50%, -50%)",
+            "background": "green",
+            "color": "white",
+            "padding": "15px",
+            "border-radius": "5px",
+            "font-size": "16px",
+            "text-align": "center",
+            "z-index": "9999",
+            "display": "block"
+          });
+
+          setTimeout(function() {
+            messageDiv.fadeOut();
+          }, 3000); // Hide after 3 seconds
+
+          $("#ExpensesForm")[0].reset(); // Reset the form
+        },
+        error: function() {
+          $("#expensesMessage").html("<p style='color:red;'>Error submitting form.</p>");
+        }
       });
+    });
+    // <!-- search Expenses start & end date -->
+    $("#search-btn").click(function() {
+      var startDate = $("#start-date").val();
+      var endDate = $("#end-date").val();
+      var start = startDate ? new Date(startDate) : null;
+      var end = endDate ? new Date(endDate) : null;
+      $("#expenses-table tr").each(function() {
+        var rowDate = new Date($(this).find("td:first").text().trim());
+        if ((!start || rowDate >= start) && (!end || rowDate <= end)) {
+          $(this).show();
+        } else {
+          $(this).hide();
+        }
+      });
+    });
+    $("#reset-btn").click(function() {
+      $("#start-date").val("");
+      $("#end-date").val("");
+      $("#expenses-table tr").show();
     });
 
     function checklen() {
@@ -661,6 +930,29 @@ if (isset($_GET['cancel'])) {
       console.log(id);
       document.querySelector(id).click();
     }
+    //  Appointment Tables Search
+    document.getElementById("searchInput").addEventListener("keyup", function() {
+      let filter = this.value.toLowerCase();
+      // alert(filter);
+      let rows = document.querySelectorAll("#patientTable tr");
+
+      rows.forEach(row => {
+        let name = row.querySelector(".patient-name").textContent.toLowerCase();
+        row.style.display = name.includes(filter) ? "" : "none";
+      });
+    });
+
+    //  patient Tables Search
+    document.getElementById("patientSearchInput").addEventListener("keyup", function() {
+      let filter = this.value.toLowerCase();
+      // alert(filter);
+      let rows = document.querySelectorAll("#patientDataSearch tr");
+
+      rows.forEach(row => {
+        let name = row.querySelector(".patient-firstName").textContent.toLowerCase();
+        row.style.display = name.includes(filter) ? "" : "none";
+      });
+    });
   </script>
 </body>
 
