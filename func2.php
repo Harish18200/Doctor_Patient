@@ -13,6 +13,56 @@ if (isset($_POST['patsub1'])) {
   $address = isset($_POST['address']) ? $_POST['address'] : "null";
   $dob = isset($_POST['dob']) ? $_POST['dob'] : "null";
   $referred_by = isset($_POST['referred_by']) ? $_POST['referred_by'] : "null";
+  if (isset($_POST['patientId']) && !empty($_POST['patientId'])) {
+    $patientId = $_POST['patientId'];
+
+    $update = "UPDATE patreg SET 
+        fname = ?, 
+        lname = ?, 
+        gender = ?, 
+        email = ?, 
+        contact = ?, 
+        password = ?, 
+        cpassword = ?, 
+        marital_status = ?, 
+        address = ?, 
+        dob = ?, 
+        referred_by = ? 
+    WHERE pid = ?";
+
+    // Prepare the statement
+    $stmt = $con->prepare($update);
+
+    if (!$stmt) {
+      die(json_encode(["success" => false, "message" => "Query preparation failed: " . $con->error]));
+    }
+
+    // Bind parameters
+    $stmt->bind_param(
+      "sssssssssssi",
+      $fname,
+      $lname,
+      $gender,
+      $email,
+      $contact,
+      $password,
+      $cpassword,
+      $marital_status,
+      $address,
+      $dob,
+      $referred_by,
+      $patientId
+    );
+
+    if ($stmt->execute()) {
+      echo json_encode(["success" => true, "message" => "Patient updated successfully"]);
+    } else {
+      echo json_encode(["success" => false, "message" => "Update failed: " . $stmt->error]);
+    }
+
+    $stmt->close();
+    exit;
+  }
 
   if ($password == $cpassword) {
     $query = "insert into patreg(fname,lname,gender,email,contact,password,cpassword,marital_status,address,dob,referred_by) values ('$fname','$lname','$gender','$email','$contact','$password','$cpassword','$marital_status','$address','$dob','$referred_by');";

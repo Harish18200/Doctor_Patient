@@ -42,8 +42,8 @@ if (isset($_GET['approvalId'])) {
   $stmt->close();
 }
 if (isset($_GET['patientDeleteId'])) {
-  $patientID = $_GET['patientDeleteId']; 
-  $query = "DELETE FROM patreg WHERE pid = ?"; 
+  $patientID = $_GET['patientDeleteId'];
+  $query = "DELETE FROM patreg WHERE pid = ?";
 
   $stmt = $con->prepare($query);
   $stmt->bind_param("i", $patientID);
@@ -190,7 +190,6 @@ if (isset($_GET['patientDeleteId'])) {
           <a class="list-group-item list-group-item-action " href="#list-app" id="list-app-list" role="tab" data-toggle="list" aria-controls="home">Appointment List</a>
           <a class="list-group-item list-group-item-action " href="#list-rejected" id="list-rejected-list" role="tab" data-toggle="list" aria-controls="home"> Rejected Appointment </a>
           <a class="list-group-item list-group-item-action " href="#list-approval" id="list-approval-list" role="tab" data-toggle="list" aria-controls="home"> Approval Appointment </a>
-
           <a class="list-group-item list-group-item-action" href="#list-pres" id="list-pres-list" role="tab" data-toggle="list" aria-controls="home"> Prescription List</a>
           <a class="list-group-item list-group-item-action" href="#list-patient" id="list-patient-list" role="tab" data-toggle="list" aria-controls="home"> Patient List</a>
           <a class="list-group-item list-group-item-action" href="#list-add-patient" id="list-add-patient-list" role="tab" data-toggle="list" aria-controls="home">Add Patient </a>
@@ -417,8 +416,6 @@ if (isset($_GET['patientDeleteId'])) {
 
             </div>
           </div>
-
-
           <!-- Patient List div -->
           <div class="tab-pane fade" id="list-patient" role="tabpanel" aria-labelledby="list-home-list">
 
@@ -462,11 +459,11 @@ if (isset($_GET['patientDeleteId'])) {
                       <td><?php echo $row['address']; ?></td>
                       <td>
 
-                        <button type="button" class="btn btn-primary view-btn" data-patient-id="1">View</button>
+                        <button type="button" class="btn btn-primary view-btn" data-patient-id=<?php echo $row['pid']; ?>>View</button>
                         <a href="doctor-panel.php?patientDeleteId=<?php echo $row['pid']; ?>"
                           onClick="return confirm('Are you sure you want to Delete this Patient ?')"
-                          title="Reject Appointment"  class="btn btn-danger">Delete
-                         
+                          title="Reject Appointment" class="btn btn-danger">Delete
+
                         </a>
                       </td>
 
@@ -531,7 +528,6 @@ if (isset($_GET['patientDeleteId'])) {
               </tbody>
             </table>
           </div>
-
           <!-- Add patient  div -->
           <div class="tab-pane fade" id="list-add-patient" role="tabpanel" aria-labelledby="list-home-list">
             <div id="responseMessage"></div>
@@ -540,10 +536,10 @@ if (isset($_GET['patientDeleteId'])) {
 
                 <div class="col-md-6">
                   <div class="form-group">
-                    <input type="text" class="form-control" placeholder="First Name *" name="fname" required />
+                    <input type="text" class="form-control" id="first_name" placeholder="First Name *" name="fname" required />
                   </div>
                   <div class="form-group">
-                    <input type="email" class="form-control" placeholder="Your Email *" name="email" required />
+                    <input type="email" class="form-control" id="email" placeholder="Your Email *" name="email" required />
                   </div>
 
                   <!-- Marital Status -->
@@ -567,32 +563,32 @@ if (isset($_GET['patientDeleteId'])) {
                   </div>
 
                   <div class="form-group">
-                    <input type="text" name="address" class="form-control" placeholder="Enter Address" />
+                    <input type="text" name="address" id="address" class="form-control" placeholder="Enter Address" />
                   </div>
                   <div class="form-group">
-                    <input type="password" class="form-control" placeholder="Password *" id="password" name="password" required />
+                    <input type="password" class="form-control" id="password" placeholder="Password *" id="password" name="password" required />
                   </div>
 
                   <div class="form-group">
                     <label class="radio inline">
-                      <input type="radio" name="gender" value="Male" checked> Male
+                      <input type="radio" id="male" name="gender" value="Male" checked> Male
                     </label>
                     <label class="radio inline">
-                      <input type="radio" name="gender" value="Female"> Female
+                      <input type="radio" id="female" name="gender" value="Female"> Female
                     </label>
                   </div>
                 </div>
 
                 <div class="col-md-6">
                   <div class="form-group">
-                    <input type="text" class="form-control" placeholder="Last Name *" name="lname" required />
+                    <input type="text" class="form-control" id="last_name" placeholder="Last Name *" name="lname" required />
                   </div>
 
                   <div class="form-group">
-                    <input type="tel" minlength="10" maxlength="10" name="contact" class="form-control" placeholder="Your Phone *" required />
+                    <input type="tel" minlength="10" maxlength="10" id="phone" name="contact" class="form-control" placeholder="Your Phone *" required />
                   </div>
                   <div class="form-group">
-                    <input type="date" name="dob" class="form-control" placeholder="Date of Birth *" />
+                    <input type="date" name="dob" id="dob" class="form-control" placeholder="Date of Birth *" />
                   </div>
                   <div class="form-group">
                     <input type="text" name="referred_by" class="form-control" placeholder="Referred By *" />
@@ -601,6 +597,8 @@ if (isset($_GET['patientDeleteId'])) {
                     <input type="password" class="form-control" id="cpassword" placeholder="Confirm Password *" name="cpassword" required />
                     <span id='message'></span>
                   </div>
+                  <input hidden type="text" name="patientId" id="patientId" class="form-control" />
+
                   <input hidden type="text" name="addPatient" value="addPatient" class="form-control" placeholder="Referred By *" />
                   <input hidden type="text" name="patsub1" value="patsub1" class="form-control" placeholder="Referred By *" />
                   <input type="submit" class="btnRegister btn btn-success" name="patsub1" onclick="return checklen();" value="Register" />
@@ -741,27 +739,6 @@ if (isset($_GET['patientDeleteId'])) {
               </table>
             </div>
           </div>
-
-
-
-
-          <div class="tab-pane fade" id="list-messages" role="tabpanel" aria-labelledby="list-messages-list">...</div>
-          <div class="tab-pane fade" id="list-settings" role="tabpanel" aria-labelledby="list-settings-list">
-            <form class="form-group" method="post" action="admin-panel1.php">
-              <div class="row">
-                <div class="col-md-4"><label>Doctor Name:</label></div>
-                <div class="col-md-8"><input type="text" class="form-control" name="doctor" required></div><br><br>
-                <div class="col-md-4"><label>Password:</label></div>
-                <div class="col-md-8"><input type="password" class="form-control" name="dpassword" required></div><br><br>
-                <div class="col-md-4"><label>Email ID:</label></div>
-                <div class="col-md-8"><input type="email" class="form-control" name="demail" required></div><br><br>
-                <div class="col-md-4"><label>Consultancy Fees:</label></div>
-                <div class="col-md-8"><input type="text" class="form-control" name="docFees" required></div><br><br>
-              </div>
-              <input type="submit" name="docsub" value="Add Doctor" class="btn btn-primary">
-            </form>
-          </div>
-          <div class="tab-pane fade" id="list-attend" role="tabpanel" aria-labelledby="list-attend-list">...</div>
         </div>
       </div>
     </div>
@@ -781,18 +758,20 @@ if (isset($_GET['patientDeleteId'])) {
       // <!-- Add Patient Ajax Form -->
       $("#patientForm").on("submit", function(e) {
         e.preventDefault();
-        // let formData = $(this).serializeArray();
-        // let dataString = "";
-        // formData.forEach(item => {
-        //   dataString += `${item.name}: ${item.value}\n`;
-        // });
-        // alert("Submitted Data:\n" + dataString);
+
+        let formData = $(this).serializeArray();
+        let dataString = "";
+        formData.forEach(item => {
+          dataString += `${item.name}: ${item.value}\n`;
+        });
+        alert("Submitted Data:\n" + dataString);
 
         $.ajax({
           url: "func2.php",
           type: "POST",
           data: $(this).serialize(),
           success: function(response) {
+            console.log(response);
             var messageDiv = $("#responseMessage");
 
             // Parse the JSON response if needed
@@ -823,6 +802,7 @@ if (isset($_GET['patientDeleteId'])) {
             $("#patientForm")[0].reset(); // Reset the form
           },
           error: function() {
+            alert('out');
             $("#responseMessage").html("<p style='color:red;'>Error submitting form.</p>");
           }
         });
@@ -832,22 +812,70 @@ if (isset($_GET['patientDeleteId'])) {
     // Action View Button Navigator
     $(".view-btn").click(function() {
       var patientId = $(this).data("patient-id");
+
       console.log("Selected Patient ID: " + patientId);
       $(".list-group-item").removeClass("active");
       $("#patient-list-container").hide();
-      $("#list-dash").removeClass("show active");
+      $(".tab-pane").removeClass("show active");
       $("#list-add-patient-list").addClass("active");
       $("#list-add-patient").addClass("show active");
+      $.ajax({
+        url: "fetch_patient.php",
+        type: "POST",
+        data: {
+          patient_id: patientId
+        },
+        dataType: "json",
+        success: function(response) {
+          if (response.success) {
+            $("#first_name").val(response.data.fname);
+            $("#last_name").val(response.data.lname);
+            $("#email").val(response.data.email);
+            $("#phone").val(response.data.contact);
+            $("#dob").val(response.data.dob);
+            $("#address").val(response.data.address);
+            $("#password").val(response.data.password);
+            $("#cpassword").val(response.data.password);
+            $("#patientId").val(response.data.pid);
+            if (response.data.gender === "Male") {
+              $("#male").prop("checked", true);
+            } else {
+              $("#female").prop("checked", true);
+            }
+          } else {
+            alert("Error fetching patient data.");
+          }
+        },
+        error: function(xhr, status, error) {
+          console.log("AJAX Error: " + error);
+          console.log("Response Text: " + xhr.responseText);
+        }
+      });
     });
     $("#list-patient-list").click(function() {
       $("#patient-list-container").show();
+      $(".tab-pane").removeClass("show active");
+      $("#list-patient").addClass("show active");
     });
 
+    // closed
+    // removing the active class from all menu items
+    $('.list-group-item').click(function(e) {
+      e.preventDefault();
 
+      // Remove 'active' class from all menu items and tab panes
+      $('.list-group-item').removeClass('active');
+      $('.tab-pane').removeClass('show active');
 
+      // Add 'active' class to the clicked menu item
+      $(this).addClass('active');
 
+      // Get the target tab ID from the href attribute
+      var targetTab = $(this).attr('href');
 
-
+      // Show the corresponding tab content
+      $(targetTab).addClass('show active');
+    });
     // <!-- Add Expenses Ajax Form -->
     $("#ExpensesForm").on("submit", function(e) {
       e.preventDefault();
